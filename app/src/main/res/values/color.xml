@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <drawable name="pressed_color">#ffe9e9e9</drawable> <!--custom color for pressed state -->
+    <drawable name="normal_color">#00000000</drawable>
+</resources>

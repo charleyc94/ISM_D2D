@@ -1,0 +1,19 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="android:Theme.Holo.Light">
+        <!-- Customize your theme here. -->
+        <item name="android:icon">@android:color/transparent</item>
+        <item name="android:actionBarItemBackground">@android:color/transparent</item>
+        <!-- Support library compatibility -->
+
+    </style>
+
+    <style name="ActivityTheme" parent="android:Theme.Holo.Light.DarkActionBar">
+        <item name="android:logo">@android:color/transparent</item>
+        <item name="android:homeAsUpIndicator">@drawable/up_navigation_selector</item>
+        <item name="android:actionBarItemBackground">@android:color/transparent</item>
+    </style>
+
+
+</resources>
