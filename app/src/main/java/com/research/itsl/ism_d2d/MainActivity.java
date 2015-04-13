@@ -11,6 +11,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
@@ -35,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 
 public class MainActivity extends Activity
@@ -57,6 +60,8 @@ public class MainActivity extends Activity
     private BroadcastReceiver wifiReceiver = null;
     private IntentFilter intentFilter;
     private WifiP2pDevice selectedWifiDevice;
+    public String groupOwnerAddress = new String();
+    public String receivedDataString = new String();
 
     private List<WifiP2pDevice> peers = new ArrayList<WifiP2pDevice>();
     private WiFiPeerListAdapter peerListAdapter;
@@ -92,7 +97,7 @@ public class MainActivity extends Activity
         peers.addAll(peerList.getDeviceList());
         peerListAdapter.notifyDataSetChanged();
         if (peers.size() == 0) {
-            Toast.makeText(MainActivity.this, "No devices available",Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "No devices available, search again",Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -171,6 +176,7 @@ public class MainActivity extends Activity
         listView.setAdapter(peerListAdapter);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //CHARLEY: Pass the selected device's information to the appropriate views to display device info
                 selectedWifiDevice = peerListAdapter.getItem(position);
                 TextView infoNameView = (TextView) findViewById(R.id.device_info_name);
                 infoNameView.setText(selectedWifiDevice.deviceName);
@@ -179,6 +185,7 @@ public class MainActivity extends Activity
                 TextView infoAddressView=(TextView) findViewById(R.id.device_info_address);
                 infoAddressView.setText(selectedWifiDevice.deviceAddress);
                 findViewById(R.id.connect_button).setVisibility(View.VISIBLE);
+                //CHARLEY: Go to the device info tab
                 mTabHost.setCurrentTab(1);
             }
         });
@@ -278,6 +285,7 @@ public class MainActivity extends Activity
     }
 
     public void deviceConnect(View view) {
+        //CHARLEY: Attempt to create a P2P connection
         switch(IsmType){
             case 0: {
                 WifiP2pConfig config = new WifiP2pConfig();
@@ -286,15 +294,20 @@ public class MainActivity extends Activity
 
                     @Override
                     public void onSuccess() {
-                        // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
+                        //CHARLEY: Find the appropriate views and display them
                         TextView connectionStatus = (TextView) findViewById(R.id.device_comm_connection_status);
                         connectionStatus.setText("Connected to " + selectedWifiDevice.deviceName);
+                        findViewById(R.id.send_button).setVisibility(View.VISIBLE);
+                        findViewById(R.id.receive_button).setVisibility(View.VISIBLE);
+                        findViewById(R.id.received_data_textview).setVisibility(View.VISIBLE);
+                        findViewById(R.id.received_data_label).setVisibility(View.VISIBLE);
+                        findViewById(R.id.disconnect_button).setVisibility(View.VISIBLE);
 
                     }
 
                     @Override
                     public void onFailure(int reason) {
-                        Toast.makeText(MainActivity.this, "Wifi P2P connection failure", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "Unable to establish Wifi P2P connection", Toast.LENGTH_SHORT).show();
 
                     }
                 });
@@ -310,19 +323,70 @@ public class MainActivity extends Activity
         }
     }
 
+    public void deviceDisconnect(View view) {
+        //CHARLEY: Remove P2P connection
+        manager.removeGroup(channel, new WifiP2pManager.ActionListener() {
+
+            @Override
+            public void onFailure(int reasonCode) {
+
+            }
+
+            @Override
+            public void onSuccess() {
+                //CHARLEY: Find the appropriate views and display them, remove views that are no longer appropriate
+                TextView connectionStatus = (TextView) findViewById(R.id.device_comm_connection_status);
+                connectionStatus.setText("No connection");
+                findViewById(R.id.send_button).setVisibility(View.INVISIBLE);
+                findViewById(R.id.receive_button).setVisibility(View.INVISIBLE);
+                findViewById(R.id.received_data_textview).setVisibility(View.INVISIBLE);
+                findViewById(R.id.received_data_label).setVisibility(View.INVISIBLE);
+                findViewById(R.id.disconnect_button).setVisibility(View.INVISIBLE);
+                TextView available = (TextView) findViewById(R.id.no_devices_available);
+                available.setVisibility(View.VISIBLE);
+                available.setText("No Devices Available");
+                findViewById(R.id.device_list).setVisibility(View.INVISIBLE);
+            }
+
+        });
+    }
+
+    public void dataTransfer(View view){
+        WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        WifiInfo wInfo = wifiManager.getConnectionInfo();
+        String macAddress = wInfo.getMacAddress();
+        switch(view.getId()){
+            //CHARLEY: Send data in the background, pass the current device & target device MAC address and the group owner address to the async background task
+            case R.id.send_button:
+                new DataTransferAsyncTask(MainActivity.this,DataTransferAsyncTask.TRANSFER_SEND,macAddress,selectedWifiDevice.deviceAddress,groupOwnerAddress).execute();
+                break;
+
+            //CHARLEY: Attempt to receive data in the background, pass the current device & target device MAC address and the group owner address to the async background task
+            case R.id.receive_button:
+                new DataTransferAsyncTask(MainActivity.this,DataTransferAsyncTask.TRANSFER_RECEIVE,macAddress,selectedWifiDevice.deviceAddress,groupOwnerAddress).execute();
+                break;
+
+            default:
+                break;
+        }
+
+    }
 
     @Override
     public void onNavigationDrawerItemSelected(int position) {
         switch(IsmType){
             case 0: {
-                if (wifiReceiver != null)
+                if (wifiReceiver != null){
                     unregisterReceiver(wifiReceiver);
+                    wifiReceiver = null;
+                }
                 break;
             }
             case 1: {
-                if (mBluetoothReceiver != null)
+                if (mBluetoothReceiver != null){
                     unregisterReceiver(mBluetoothReceiver);
-
+                    wifiReceiver = null;
+                }
                 break;
             }
             case 2: {
@@ -331,6 +395,7 @@ public class MainActivity extends Activity
         }
 
         switch(position){
+            //CHARLEY: Set up the Wifi P2P device list and register a receiver to look for devices nearby
             case 0: {
                 getActionBar().setTitle("Wifi P2P");
                 if (IsmType != position) {
@@ -354,8 +419,11 @@ public class MainActivity extends Activity
                             mTabHost.setCurrentTab(1);
                         }
                     });
-                    wifiReceiver = new WiFiP2pBroadcastReceiver(manager, channel, this);
-                    registerReceiver(wifiReceiver, intentFilter);
+                    if(wifiReceiver == null){
+                        wifiReceiver = new WiFiP2pBroadcastReceiver(manager, channel, this);
+                        registerReceiver(wifiReceiver, intentFilter);
+                    }
+
                 }
 
                 IsmType = 0;
@@ -438,7 +506,10 @@ public class MainActivity extends Activity
     protected void onDestroy()
     {
         super.onDestroy();
-
+        if(mBluetoothReceiver != null)
+           unregisterReceiver(mBluetoothReceiver);
+        if(wifiReceiver != null)
+           unregisterReceiver(wifiReceiver);
     }
 
 

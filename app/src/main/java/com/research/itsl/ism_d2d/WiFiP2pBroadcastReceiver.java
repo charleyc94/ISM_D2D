@@ -6,10 +6,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.NetworkInfo;
 import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.widget.Toast;
+
+import java.net.InetAddress;
 
 /**
  * A BroadcastReceiver that notifies of important wifi p2p events.
@@ -71,13 +74,16 @@ public class WiFiP2pBroadcastReceiver extends BroadcastReceiver {
                     .getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
 
             if (networkInfo.isConnected()) {
+                manager.requestConnectionInfo(channel, new WifiP2pManager.ConnectionInfoListener() {
 
-                // we are connected with the other device, request connection
-                // info to find group owner IP
+                    @Override
+                    public void onConnectionInfoAvailable(WifiP2pInfo info) {
 
-               /* DeviceDetailFragment fragment = (DeviceDetailFragment) activity
-                        .getFragmentManager().findFragmentById(R.id.frag_detail);
-                manager.requestConnectionInfo(channel, fragment);*/
+                        InetAddress groupOwnerAddress = info.groupOwnerAddress;
+                        activity.groupOwnerAddress=groupOwnerAddress.getHostAddress();
+
+                    }
+                });
             } else {
                 // It's a disconnect
                 //activity.resetData();
