@@ -11,7 +11,9 @@ import android.widget.Toast;
 
 import org.w3c.dom.Text;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.DatagramPacket;
@@ -59,11 +61,18 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
             if( transferAction.equals(TRANSFER_SEND)){
                 int srcPos = 0;
                 byte[] buf;
-                buf = ("Sending data from "+ this.sendAddress+ " to"+ this.receiveAddress + ". Data can now be used for signal processing ").getBytes();
+                buf = ("Sending data from "+ this.sendAddress+ " to "+ this.receiveAddress + ". Data can now be used for signal processing ").getBytes();
                 while (srcPos < buf.length) {
                     try {
                         DatagramPacket packet;
-                        InetAddress address = InetAddress.getByName(groupOwnerAddress);
+                        InetAddress address;
+                        //CHARLEY: Get the IP address from the MAC address of the target device, The OS seems to be off by hexadecimal value of 8 in the 4th to last digit
+                        String receiveIpAddress = getIPFromMac(this.receiveAddress);
+                        //CHARLEY: If we can't find the IP address(receiveIpAddress == null), just used the groupOwnerAddress
+                        if(receiveIpAddress==null)
+                            address = InetAddress.getByName(groupOwnerAddress);
+                        else
+                            address = InetAddress.getByName(receiveIpAddress);
                         //CHARLEY: If the last packet is less than 64 bytes only send how many bytes are left
                         if(buf.length- srcPos < PACKET_LENGTH){
                             packet = new DatagramPacket(buf,srcPos,  buf.length - srcPos, address, 8988);
@@ -77,6 +86,7 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
                     catch (IOException e) {
                         e.printStackTrace();
                     }
+                    //Move a PACKET LENGTH down the buffer to get the next packet
                     srcPos += PACKET_LENGTH;
                 }
             }
@@ -84,7 +94,8 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
                 try{
                     DatagramSocket receiveSocket = new DatagramSocket(8988);
 
-                    for (long stop=System.nanoTime()+TimeUnit.SECONDS.toNanos(5);stop>System.nanoTime();) {
+                    //CHARLEY: Run for TIMEOUT_SECONDS long before timing out for the receiving of packets
+                    for (long stop=System.nanoTime()+TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);stop>System.nanoTime();) {
                         packet_buf = new byte[PACKET_LENGTH];
                         DatagramPacket packet = new DatagramPacket(packet_buf, PACKET_LENGTH);
                         receiveSocket.receive(packet);
@@ -124,6 +135,39 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
             }
         }
 
+    }
+
+    //CHARLEY: Get the IP address from the given MAC address so that we can send data to the selected device
+    public static String getIPFromMac(String MAC) {
+        BufferedReader br = null;
+        try {
+            //CHARLEY: /proc/net/arp stores all the networks and devices under each network we have seen, we can find our target device by MAC through this table
+            br = new BufferedReader(new FileReader("/proc/net/arp"));
+            String line;
+            while ((line = br.readLine()) != null) {
+                //CHARLEY: split words on regex, so " +" is one or more spaces, So we split each ARP entry into array of multiple strings using space as delimiter
+                String[] splitted = line.split(" +");
+                if (splitted != null && splitted.length >= 4) {
+                    String mac = splitted[3];
+                    //CHARLEY: The first condition is to make sure we are not looing at ARP header and we are actually looking at a valid MAC address
+                    //          We skip the 13th entry in the string or 9th digit since the phone OS seems to corrupt the 9th digit
+                    if (mac.matches("..:..:..:..:..:..") && mac.substring(0,11).equals(MAC.substring(0,11)) && mac.substring(13).equals(MAC.substring(13))) {
+                        Log.v("ORIGINAL-DERIVED MAC ADDRESS-IP ADDRESS DESIRED",MAC+" "+splitted[3]+" "+splitted[0]);
+                        return splitted[0];
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                br.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        //CHARLEY: If we could not find the IP address, return null
+        return null;
     }
 
 }
