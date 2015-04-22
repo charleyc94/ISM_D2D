@@ -75,13 +75,22 @@
 
             </RelativeLayout>
 
-            <RelativeLayout
+
+            <ScrollView
                 android:id="@+id/device_info"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginBottom="50dp"
                 android:orientation="vertical"
                 android:background="#FFffffff"
+                android:overScrollMode="never"
+                android:scrollbars="none"
+                >
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingBottom="50dp"
                 >
 
                 <TextView
@@ -149,15 +158,25 @@
                     android:onClick="deviceConnect"
                     android:visibility="invisible"/>
 
-            </RelativeLayout>
-            <RelativeLayout
+                </RelativeLayout>
+            </ScrollView>
+
+            <ScrollView
                 android:id="@+id/device_comm"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginBottom="50dp"
                 android:orientation="vertical"
                 android:background="#FFffffff"
+                android:scrollbars="none"
+                android:overScrollMode="never"
                 >
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingBottom="50dp"
+                    >
 
                 <TextView
                     android:id="@+id/device_comm_connection_status"
@@ -169,7 +188,165 @@
                     android:textSize="20sp"
                     />
 
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/set_packet_length_and_timeout"
+                        android:layout_below="@id/device_comm_connection_status"
+                        android:layout_marginTop="45dp"
+                        android:visibility="invisible"
+                        >
+                        <RelativeLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="25dp"
+                            android:layout_weight="1"
+                            >
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:id="@+id/set_packet_length"
+                                android:text="Packet Length (Bytes):"
+                                android:textSize="16sp"
+                                android:layout_gravity="right"
+                                android:gravity="center_horizontal|center_vertical"
+                                android:textColor="#b3b3b3"
+                                />
+                            <EditText android:id="@+id/packet_length_entry"
+                                android:layout_width="75dp"
+                                android:layout_height="wrap_content"
+                                android:hint="64"
+                                android:layout_marginLeft="25dp"
+                                android:layout_marginRight="25dp"
+                                android:layout_marginTop="5dp"
+                                android:layout_centerHorizontal="true"
+                                android:layout_below="@id/set_packet_length"
+                                android:background="@android:drawable/editbox_background_normal"
+                                android:singleLine="true"
+                                android:textSize="16sp"
+                                android:gravity="center"
+                                android:textAlignment="center"
+                                android:cursorVisible="false"
+                                />
+
+                        </RelativeLayout>
+
+                        <RelativeLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginRight="25dp"
+                            android:layout_weight="1"
+                            >
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:id="@+id/set_timeout"
+                                android:text="Receive Socket Timeout (seconds):"
+                                android:textSize="16sp"
+                                android:layout_gravity="left"
+                                android:gravity="center_horizontal|center_vertical"
+                                android:textColor="#b3b3b3"
+                                />
+                            <EditText android:id="@+id/timeout_entry"
+                                android:layout_width="75dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginRight="25dp"
+                                android:layout_marginLeft="25dp"
+                                android:layout_marginTop="5dp"
+                                android:hint="5"
+                                android:layout_below="@id/set_timeout"
+                                android:background="@android:drawable/editbox_background_normal"
+                                android:layout_centerHorizontal="true"
+                                android:singleLine="true"
+                                android:textSize="16sp"
+                                android:gravity="center"
+                                android:textAlignment="center"
+                                android:cursorVisible="false"
+                                />
+
+                            </RelativeLayout>
+
+                        </LinearLayout>
+
+
+                        <Button
+                            android:id="@+id/disconnect_button"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Disconnect from Device"
+                            android:background="@drawable/button_selector"
+                            android:textColor="@drawable/button_text_selector"
+                            android:layout_below="@id/set_packet_length_and_timeout"
+                            android:layout_centerHorizontal="true"
+                            android:layout_marginTop="45dp"
+                            android:layout_marginRight="65dp"
+                            android:layout_marginLeft="65dp"
+                            android:onClick="deviceDisconnect"
+                            android:visibility="invisible"/>
+
+                    <Button
+                        android:id="@+id/send_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Send Data"
+                        android:background="@drawable/button_selector"
+                        android:textColor="@drawable/button_text_selector"
+                        android:layout_centerHorizontal="true"
+                        android:layout_below="@id/disconnect_button"
+                        android:layout_marginTop="45dp"
+                        android:layout_marginRight="65dp"
+                        android:layout_marginLeft="65dp"
+                        android:visibility="invisible"
+                        android:onClick="dataTransfer"/>
+
+                    <Button
+                        android:id="@+id/receive_button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Receive Data"
+                        android:background="@drawable/button_selector"
+                        android:textColor="@drawable/button_text_selector"
+                        android:layout_centerHorizontal="true"
+                        android:layout_below="@id/send_button"
+                        android:layout_marginTop="45dp"
+                        android:layout_marginRight="65dp"
+                        android:layout_marginLeft="65dp"
+                        android:visibility="invisible"
+                        android:onClick="dataTransfer"/>
+
+                        <TextView
+                            android:layout_below="@id/receive_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="25dp"
+                            android:layout_centerHorizontal="true"
+                            android:textSize="20sp"
+                            android:textColor="#b3b3b3"
+                            android:text="DATA RECEIVED:"
+                            android:layout_marginTop="50dp"
+                            android:id="@+id/received_data_label"
+                            android:visibility="invisible"
+                            />
+
+                        <TextView
+                            android:id="@+id/received_data_textview"
+                            android:layout_width="fill_parent"
+                            android:layout_marginTop="25dp"
+                            android:layout_marginRight="25dp"
+                            android:layout_marginLeft="25dp"
+                            android:layout_height="fill_parent"
+                            android:textSize="16sp"
+                            android:lineSpacingExtra="1sp"
+                            android:layout_below="@id/received_data_label"
+                            android:layout_centerHorizontal="true"
+                            android:visibility="invisible"
+                            />
+
+
             </RelativeLayout>
+        </ScrollView>
+
 
 
 
