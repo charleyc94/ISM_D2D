@@ -18,6 +18,7 @@ import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -25,19 +26,25 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
 
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
+import java.util.regex.Pattern;
 
 
 public class MainActivity extends Activity
@@ -62,6 +69,8 @@ public class MainActivity extends Activity
     private WifiP2pDevice selectedWifiDevice;
     public String groupOwnerAddress = new String();
     public String receivedDataString = new String();
+    public int PACKET_LENGTH = 64;
+    public int TIMEOUT_SECONDS = 5;
 
     private List<WifiP2pDevice> peers = new ArrayList<WifiP2pDevice>();
     private WiFiPeerListAdapter peerListAdapter;
@@ -118,6 +127,59 @@ public class MainActivity extends Activity
         mNavigationDrawerFragment.setUp(
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
+
+        //CHARLEY: This code works with XML file to prevent cursor from starting in edit text for packet length and timeout, We turn on the cursor when the user actually edits the fields
+        TextView.OnClickListener onClickListener = new TextView.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                if(v.getId() == R.id.packet_length_entry){
+                    EditText packetEditText = (EditText) findViewById(R.id.packet_length_entry);
+                    packetEditText.setCursorVisible(true);
+                }else{
+                    EditText timeoutEditText = (EditText) findViewById(R.id.timeout_entry);
+                    timeoutEditText.setCursorVisible(true);
+                }
+            }
+        };
+
+        //CHARLEY: Listen for changes to edit text values and update the respective value, either packet length or receive socket timeout to allow users to set these values
+        TextView.OnEditorActionListener enterKeyListener = new TextView.OnEditorActionListener(){
+            @Override
+            public boolean onEditorAction(TextView exampleView, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    if(exampleView.getId()==R.id.packet_length_entry){
+                        EditText editText = (EditText) findViewById(R.id.packet_length_entry);
+                        String packetLengthString = editText.getText().toString();
+                        if(Pattern.compile("[0-9]+").matcher(packetLengthString).matches()){
+                            MainActivity.this.PACKET_LENGTH = Integer.parseInt(packetLengthString);
+                        }else{
+                            editText.setText("");
+                            Toast.makeText(MainActivity.this, "Please input a positive integer",Toast.LENGTH_SHORT).show();
+                        }
+                        editText.setCursorVisible(false);
+                    }else{
+                        EditText editText = (EditText) findViewById(R.id.timeout_entry);
+                        String timeoutLengthString = editText.getText().toString();
+                        if(Pattern.compile("[0-9]+").matcher(timeoutLengthString).matches()){
+                            MainActivity.this.TIMEOUT_SECONDS = Integer.parseInt(timeoutLengthString);
+                        }
+                        else{
+                            editText.setText("");
+                            Toast.makeText(MainActivity.this, "Please input a positive integer",Toast.LENGTH_SHORT).show();
+                        }
+                        editText.setCursorVisible(false);
+                    }
+                }
+                return true;
+            }
+        };
+
+        EditText packetLengthEditText = (EditText) findViewById(R.id.packet_length_entry);
+        packetLengthEditText.setOnEditorActionListener(enterKeyListener);
+        packetLengthEditText.setOnClickListener(onClickListener);
+        EditText timeoutEditText = (EditText) findViewById(R.id.timeout_entry);
+        timeoutEditText.setOnEditorActionListener(enterKeyListener);
+        timeoutEditText.setOnClickListener(onClickListener);
 
         //---------------------CHARLEY: Setting up the tabs---------------------------------
         mTabHost = (TabHost) findViewById(android.R.id.tabhost);
@@ -248,6 +310,10 @@ public class MainActivity extends Activity
                         }
 
                         case 1: {
+                            if (!mBluetoothAdapter.isDiscovering()){
+                                mBluetoothAdapter.startDiscovery();
+                                Toast.makeText(MainActivity.this, "Discovery Initiated", Toast.LENGTH_SHORT).show();
+                            }
                             break;
                         }
                         case 2: {
@@ -302,6 +368,7 @@ public class MainActivity extends Activity
                         findViewById(R.id.received_data_textview).setVisibility(View.VISIBLE);
                         findViewById(R.id.received_data_label).setVisibility(View.VISIBLE);
                         findViewById(R.id.disconnect_button).setVisibility(View.VISIBLE);
+                        findViewById(R.id.set_packet_length_and_timeout).setVisibility(View.VISIBLE);
 
                     }
 
@@ -342,6 +409,7 @@ public class MainActivity extends Activity
                 findViewById(R.id.received_data_textview).setVisibility(View.INVISIBLE);
                 findViewById(R.id.received_data_label).setVisibility(View.INVISIBLE);
                 findViewById(R.id.disconnect_button).setVisibility(View.INVISIBLE);
+                findViewById(R.id.set_packet_length_and_timeout).setVisibility(View.VISIBLE);
                 TextView available = (TextView) findViewById(R.id.no_devices_available);
                 available.setVisibility(View.VISIBLE);
                 available.setText("No Devices Available");
@@ -351,7 +419,7 @@ public class MainActivity extends Activity
         });
     }
 
-    public void dataTransfer(View view){
+    public void dataTransfer(View view) throws Exception{
         WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         WifiInfo wInfo = wifiManager.getConnectionInfo();
         String macAddress = wInfo.getMacAddress();
@@ -363,6 +431,11 @@ public class MainActivity extends Activity
 
             //CHARLEY: Attempt to receive data in the background, pass the current device & target device MAC address and the group owner address to the async background task
             case R.id.receive_button:
+                //CHARLEY: Clear the Received Data section since we are attempting to received new set of data
+                this.receivedDataString = "";
+                TextView receivedData = (TextView) findViewById(R.id.received_data_textview);
+                receivedData.setText(this.receivedDataString);
+                //CHARLEY: Attempt to receive data in background.
                 new DataTransferAsyncTask(MainActivity.this,DataTransferAsyncTask.TRANSFER_RECEIVE,macAddress,selectedWifiDevice.deviceAddress,groupOwnerAddress).execute();
                 break;
 
@@ -371,6 +444,7 @@ public class MainActivity extends Activity
         }
 
     }
+
 
     @Override
     public void onNavigationDrawerItemSelected(int position) {
@@ -383,6 +457,7 @@ public class MainActivity extends Activity
                 break;
             }
             case 1: {
+                mBluetoothAdapter.cancelDiscovery();
                 if (mBluetoothReceiver != null){
                     unregisterReceiver(mBluetoothReceiver);
                     wifiReceiver = null;
