@@ -68,7 +68,7 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
                 byte[] buf;
                 //CHARLEY: Convert a file placed within ISM_D2D folder in phone to bytes, or if file does not exist, simply send a simple message
                 buf = convertFileToBytes();
-                while (srcPos < buf.length) {
+                while (srcPos < buf.length ) {
                     try {
                         DatagramPacket packet;
                         InetAddress address;
@@ -80,7 +80,7 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
                         else
                             address = InetAddress.getByName(receiveIpAddress);
                         //CHARLEY: If the last packet is less than 64 bytes only send how many bytes are left
-                        if(buf.length- srcPos < mainActivity.PACKET_LENGTH){
+                        if(buf.length- srcPos - 1 < mainActivity.PACKET_LENGTH){
                             packet = new DatagramPacket(buf,srcPos,  buf.length - srcPos, address, 8988);
                         }else{
                             packet = new DatagramPacket(buf,srcPos, mainActivity.PACKET_LENGTH, address, 8988);
@@ -174,8 +174,9 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
                         if(dirFiles[i].getName().equals(dataFileName)){
                             try{
                                 FileInputStream fileInputStream = new FileInputStream(dirFiles[i]);
+                                byte[] resultByteArray = convertStreamToString(fileInputStream).getBytes();
                                 fileInputStream.close();
-                                return convertStreamToString(fileInputStream).getBytes();
+                                return resultByteArray;
                             }catch (FileNotFoundException fn){
                                 Log.v("Unable to find file",dataFileName);
                             }catch (Exception e){}
@@ -197,7 +198,7 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
             sb.append("-");
         }
         sb.append("\n");
-        String line = null;
+         String line = null;
         while ((line = reader.readLine()) != null) {
             sb.append(line);
         }
@@ -220,7 +221,7 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
                     //CHARLEY: The first condition is to make sure we are not looing at ARP header and we are actually looking at a valid MAC address
                     //          We skip the 13th entry in the string or 9th digit since the phone OS seems to corrupt the 9th digit
                     if (mac.matches("..:..:..:..:..:..") && mac.substring(0,11).equals(MAC.substring(0,11)) && mac.substring(13).equals(MAC.substring(13))) {
-                        Log.v("ORIGINAL-DERIVED MAC ADDRESS-IP ADDRESS DESIRED",MAC+" "+splitted[3]+" "+splitted[0]);
+                        //Log.v("ORIGINAL-DERIVED MAC ADDRESS-IP ADDRESS DESIRED",MAC+" "+splitted[3]+" "+splitted[0]);
                         return splitted[0];
                     }
                 }

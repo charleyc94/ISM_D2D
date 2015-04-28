@@ -70,7 +70,7 @@ public class MainActivity extends Activity
     public String groupOwnerAddress = new String();
     public String receivedDataString = new String();
     public int PACKET_LENGTH = 64;
-    public int TIMEOUT_SECONDS = 5;
+    public int TIMEOUT_SECONDS = 3;
 
     private List<WifiP2pDevice> peers = new ArrayList<WifiP2pDevice>();
     private WiFiPeerListAdapter peerListAdapter;
@@ -409,7 +409,7 @@ public class MainActivity extends Activity
                 findViewById(R.id.received_data_textview).setVisibility(View.INVISIBLE);
                 findViewById(R.id.received_data_label).setVisibility(View.INVISIBLE);
                 findViewById(R.id.disconnect_button).setVisibility(View.INVISIBLE);
-                findViewById(R.id.set_packet_length_and_timeout).setVisibility(View.VISIBLE);
+                findViewById(R.id.set_packet_length_and_timeout).setVisibility(View.INVISIBLE);
                 TextView available = (TextView) findViewById(R.id.no_devices_available);
                 available.setVisibility(View.VISIBLE);
                 available.setText("No Devices Available");
