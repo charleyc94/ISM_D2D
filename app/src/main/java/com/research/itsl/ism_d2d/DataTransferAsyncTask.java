@@ -65,7 +65,7 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
 
             //CHARLEY: We are using port 8988 for our socket and sending to the group owner address. Each packet is at most 64 bytes of data.
             if( transferAction.equals(TRANSFER_SEND)){
-                int srcPos = 1;
+                int srcPos = 0;
                 byte[] buf;
                 //CHARLEY: Convert a file placed within ISM_D2D folder in phone to bytes, or if file does not exist, simply send a simple message
                 buf = convertFileToBytes();
@@ -201,7 +201,7 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
         StringBuilder sb = new StringBuilder();
         sb.append("From: "+this.sendAddress+ " To: "+ this.receiveAddress);
         int initalHeaderLength = sb.length();
-        for(int i = 0; i < (this.mainActivity.PACKET_LENGTH - initalHeaderLength); i++){
+        for(int i = 0; i < (this.mainActivity.PACKET_LENGTH - initalHeaderLength-1); i++){
             sb.append("-");
         }
         sb.append("\n");
