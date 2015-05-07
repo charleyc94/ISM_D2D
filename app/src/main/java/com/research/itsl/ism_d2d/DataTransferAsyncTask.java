@@ -25,6 +25,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -99,23 +100,29 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
             else if( transferAction.equals(TRANSFER_RECEIVE)){
                 try{
                     DatagramSocket receiveSocket = new DatagramSocket(8988);
+                    receiveSocket.setSoTimeout(mainActivity.TIMEOUT_SECONDS * 1000);
 
                     //CHARLEY: Run for TIMEOUT_SECONDS long before timing out for the receiving of packets
-                    for (long stop=System.nanoTime()+TimeUnit.SECONDS.toNanos(mainActivity.TIMEOUT_SECONDS);stop>System.nanoTime();) {
-                        packet_buf = new byte[mainActivity.PACKET_LENGTH];
-                        DatagramPacket packet = new DatagramPacket(packet_buf, mainActivity.PACKET_LENGTH);
-                        receiveSocket.receive(packet);
-                        //CHARLEY: Parse the received packet into a string and concatenate it to our result string so we can display our data
-                        byte[] data = packet.getData();
-                        InputStreamReader input = new InputStreamReader(new ByteArrayInputStream(data), Charset.forName("UTF-8"));
-                        StringBuilder str = new StringBuilder();
-                        for (int value; (value = input.read()) != -1; )
-                            str.append((char) value);
-                        mainActivity.receivedDataString+=(str.toString())+"\n";
+                    while (true) {
+                        try {
+                            packet_buf = new byte[mainActivity.PACKET_LENGTH];
+                            DatagramPacket packet = new DatagramPacket(packet_buf, mainActivity.PACKET_LENGTH);
+                            receiveSocket.receive(packet);
+                            //CHARLEY: Parse the received packet into a string and concatenate it to our result string so we can display our data
+                            byte[] data = packet.getData();
+                            InputStreamReader input = new InputStreamReader(new ByteArrayInputStream(data), Charset.forName("UTF-8"));
+                            StringBuilder str = new StringBuilder();
+                            for (int value; (value = input.read()) != -1; )
+                                str.append((char) value);
+                            mainActivity.receivedDataString+=(str.toString())+"\n";
+                            continue;
+                        }
+                        catch (SocketTimeoutException e) {
+                            receiveSocket.close();
+                            return mainActivity.receivedDataString;
+                        }
                     }
 
-                    receiveSocket.close();
-                    return mainActivity.receivedDataString;
                 }catch(IOException e){
                     e.printStackTrace();
                 }
