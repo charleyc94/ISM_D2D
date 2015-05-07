@@ -86,8 +86,6 @@ public class DataTransferAsyncTask extends AsyncTask<Void, Void, String> {
                         }else{
                             packet = new DatagramPacket(buf,srcPos, mainActivity.PACKET_LENGTH, address, 8988);
                         }
-                        Number src_pos = srcPos;
-                        Log.v("SOURCE POSITION ",src_pos.toString() );
 
                         sendSocket.send(packet);
 
