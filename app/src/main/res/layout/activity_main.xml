@@ -94,6 +94,18 @@
                 >
 
                 <TextView
+                    android:id="@+id/device_info_please_select_device"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="45dp"
+                    android:layout_marginRight="45dp"
+                    android:gravity="center"
+                    android:layout_centerInParent="true"
+                    android:text="Please Select an Available Device"
+                    android:textSize="20sp"
+                    />
+
+                <TextView
                     android:id="@+id/device_info_name"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"

@@ -247,6 +247,7 @@ public class MainActivity extends Activity
                 TextView infoAddressView=(TextView) findViewById(R.id.device_info_address);
                 infoAddressView.setText(selectedWifiDevice.deviceAddress);
                 findViewById(R.id.connect_button).setVisibility(View.VISIBLE);
+                findViewById(R.id.device_info_please_select_device).setVisibility(View.INVISIBLE);
                 //CHARLEY: Go to the device info tab
                 mTabHost.setCurrentTab(1);
             }
