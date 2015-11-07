@@ -492,6 +492,7 @@ public class MainActivity extends Activity
                             TextView infoAddressView = (TextView) findViewById(R.id.device_info_address);
                             infoAddressView.setText(selectedWifiDevice.deviceAddress);
                             findViewById(R.id.connect_button).setVisibility(View.VISIBLE);
+                            findViewById(R.id.device_info_please_select_device).setVisibility(View.INVISIBLE);
                             mTabHost.setCurrentTab(1);
                         }
                     });
@@ -522,6 +523,7 @@ public class MainActivity extends Activity
                         TextView infoAddressView = (TextView) findViewById(R.id.device_info_address);
                         infoAddressView.setText(currentBluetoothDevice.getAddress());
                         findViewById(R.id.connect_button).setVisibility(View.VISIBLE);
+                        findViewById(R.id.device_info_please_select_device).setVisibility(View.INVISIBLE);
                         mTabHost.setCurrentTab(1);
                     }
                 });
@@ -544,6 +546,8 @@ public class MainActivity extends Activity
                                 if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                                     findViewById(R.id.no_devices_available).setVisibility(View.INVISIBLE);
                                     listView.setVisibility(View.VISIBLE);
+                                    //Re-initialize list of Bluetooth devices
+                                    mBluetoothArrayAdapter.clear();
                                     // Get the BluetoothDevice object from the Intent
                                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                                     bluetoothRssi.put(device, intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, (short) 0));
